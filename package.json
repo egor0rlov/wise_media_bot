@@ -1,0 +1,29 @@
+{
+  "name": "wisemediabot",
+  "version": "1.0.0",
+  "description": "Telegram bot that provides access to materials about media studies",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "media"
+  ],
+  "engines": {
+    "node": "14.13.1"
+  },
+  "author": "Orlov Yehor",
+  "license": "ISC",
+  "dependencies": {
+    "dayjs": "^1.9.6",
+    "dotenv": "^8.2.0",
+    "newsapi": "^2.4.1",
+    "node-telegram-bot-api": "^0.50.0",
+    "puppeteer": "^5.5.0"
+  },
+  "devDependencies": {
+    "chalk": "^4.1.0"
+  }
+}
