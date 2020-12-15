@@ -109,8 +109,9 @@ bot.onText(RegEx.anotherRequest, async (msg) => {
 });
 
 bot.on('message', async (msg) => {
-    if (state === State.newsSearcher && msg.text !== Button.toMain) {
-        const chatId = msg.chat.id;
+    const chatId = msg.chat.id;
+
+    if (state === State.newsSearcher && msg.text && msg.text !== Button.toMain) {
         state = State.regular;
 
         const weekRelevance = dayjs().subtract(1, 'week').format('YYYY-MM-DD');
@@ -139,6 +140,8 @@ bot.on('message', async (msg) => {
                 }
             });
         }
+    } else if (!msg.text) {
+        await bot.sendMessage(chatId, BotAnswer.isItSticker);
     }
 });
 
