@@ -7,6 +7,7 @@ require('dotenv').config();
 //Telegram bot import and setup:
 const TelegramBot = require('node-telegram-bot-api');
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+console.log('Token: ', TOKEN);
 const options = {
     webHook: {
         // Port to which you should bind is assigned to $PORT variable
@@ -22,6 +23,7 @@ bot.setWebHook(`${url}/bot${TOKEN}`);
 //News API import and setup:
 const NewsAPI = require('newsapi');
 const NEWS_TOKEN = process.env.NEWS_API_TOKEN;
+console.log('News token: ', NEWS_TOKEN);
 const news = new NewsAPI(NEWS_TOKEN);
 
 //Constants imports:
