@@ -5,9 +5,19 @@
 require('dotenv').config();
 
 //Telegram bot import and setup:
-const telegramBot = require('node-telegram-bot-api');
+const TelegramBot = require('node-telegram-bot-api');
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new telegramBot(TOKEN, {polling: true});
+const options = {
+    webHook: {
+        // Port to which you should bind is assigned to $PORT variable
+        // See: https://devcenter.heroku.com/articles/dynos#local-environment-variables
+        port: process.env.PORT
+    }
+};
+const url = process.env.APP_URL;
+const bot = new TelegramBot(TOKEN, options);
+
+bot.setWebHook(`${url}/bot${TOKEN}`);
 
 //News API import and setup:
 const NewsAPI = require('newsapi');

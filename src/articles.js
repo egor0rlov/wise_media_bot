@@ -1,6 +1,6 @@
 /**
  * Array of articles.
- * Elements format: {name: ARTICLE_TITLE, queue: LINK_TO_ARTICLE}
+ * Elements format: {name: ARTICLE_TITLE, queue: ARTICLE_LINK_QUEUE}
  */
 
 exports.articles = [
@@ -14,62 +14,18 @@ exports.articles = [
     },
     {
         name: 'Історія розвитку медіаосвіти',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
+        queue: '%D0%86stor%D1%96ya-rozvitku-med%D1%96aosv%D1%96ti-12-08'
     },
     {
-        name: 'Суспільне значення медіаосвіти',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
+        name: 'Основні принципи медіаосвіти в Україні',
+        queue: 'Osnovn%D1%96-principi-med%D1%96aosv%D1%96ti-v-Ukrain%D1%96-12-08'
     },
     {
         name: 'Поняття медіаграмотності',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
+        queue: 'Ponyattya-med%D1%96agramotnost%D1%96-12-08'
     },
     {
         name: 'Медіаосвіта в західних країнах',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Медіаосвіта в Україні',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Авторське право та суміжні права в медіапросторі',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Роль медіа в суспільстві',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Журналістські професійні стандарти',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Порушення стандартів і маніпулювання в медіа',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Як функціонує медіакомпанія?',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Джерела прибутку в медіа',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Медіа та їхні аудиторії',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Регулювання медіа',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Маніпулятивне телебачення',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
-    },
-    {
-        name: 'Специфіка кіно',
-        queue: '4-klyuchov%D1%96-koncepti-med%D1%96aosv%D1%96ti-11-20'
+        queue: 'Med%D1%96aosv%D1%96ta-v-zah%D1%96dnih-krainah-12-08'
     },
 ];
