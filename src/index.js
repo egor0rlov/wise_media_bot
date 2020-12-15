@@ -4,49 +4,33 @@
 
 require('dotenv').config();
 
-//Telegram bot import and setup:
 const TelegramBot = require('node-telegram-bot-api');
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-console.log('Token: ', TOKEN);
-const options = {
-    webHook: {
-        // Port to which you should bind is assigned to $PORT variable
-        // See: https://devcenter.heroku.com/articles/dynos#local-environment-variables
-        port: process.env.PORT
-    }
-};
+const options = {webHook: {port: process.env.PORT}};
 const url = process.env.APP_URL;
 const bot = new TelegramBot(TOKEN, options);
-
 bot.setWebHook(`${url}/bot${TOKEN}`);
 
-//News API import and setup:
 const NewsAPI = require('newsapi');
 const NEWS_TOKEN = process.env.NEWS_API_TOKEN;
-console.log('News token: ', NEWS_TOKEN);
 const news = new NewsAPI(NEWS_TOKEN);
 
-//Constants imports:
 const Button = require('./strings').Button;
 const BotAnswer = require('./strings').BotAnswer;
 const RegEx = require('./strings').RegEx;
 const State = require('./consts').State;
 const Keyboard = require('./keyboards').Keyboard;
 
-//Articles array (elements format: {name, link to article}):
-const articles = require('./articles').articles;
+let articles;
+const fetchMyArticles = require('./articlesUtils').fetchMyArticles;
 
-//Side imports:
 const dayjs = require('dayjs');
 
 /**
  * Variables:
  */
 
-//State defines functionality of bot depending on user's command requests:
 let state = State.regular;
-
-//Page counter for inline messages:
 let inlinePageNumber;
 
 //Bot logic section---------------------------------------------------------------------------------------------------//
@@ -84,6 +68,8 @@ bot.onText(RegEx.toMain, (async (msg) => {
 bot.onText(RegEx.materials, async (msg) => {
     inlinePageNumber = 0;
 
+    articles = await fetchMyArticles();
+
     await sendArticlesList(msg);
 });
 
@@ -91,7 +77,7 @@ bot.on('callback_query', async (query) => {
     const data = query.data;
 
     if (data === '1' || data === '-1') {
-        await updateLastInlineMessage(query, data);
+        await updateLastInlineMessage(query);
     } else if (data !== '0') {
         const chatId = query.message.chat.id;
         const linkToSend = 'https://telegra.ph/' + data;
@@ -101,7 +87,7 @@ bot.on('callback_query', async (query) => {
 });
 
 /**
- * News request handlers
+ * News request handlers:
  */
 
 bot.onText(RegEx.newsSearch, async (msg) => {
@@ -128,7 +114,7 @@ bot.on('message', async (msg) => {
         state = State.regular;
 
         const weekRelevance = dayjs().subtract(1, 'week').format('YYYY-MM-DD');
-        const articles = await fetchArticlesFromWeb(msg.text, weekRelevance);
+        const articles = await fetchNewsFromWeb(msg.text, weekRelevance);
 
         const requestArticlesAmount = 5;
 
@@ -225,7 +211,8 @@ async function sendArticlesList(msg) {
     });
 }
 
-async function updateLastInlineMessage(query, data) {
+async function updateLastInlineMessage(query) {
+    const data = query.data;
     inlinePageNumber = inlinePageNumber + Number(data);
 
     const chatId = query.message.chat.id;
@@ -237,7 +224,7 @@ async function updateLastInlineMessage(query, data) {
         {message_id: messageId, chat_id: chatId});
 }
 
-async function fetchArticlesFromWeb(requestText, dateFrom) {
+async function fetchNewsFromWeb(requestText, dateFrom) {
     const articles = await news.v2.everything({
         q: requestText,
         sortBy: 'relevancy',
@@ -261,15 +248,10 @@ async function sendNews(chatId, articles, requestArticlesAmount) {
 
         const html = `
 <b>${i}:</b>
-
 <i>Ресурс: ${source}</i>
-
 <b>${title}</b>
-
 ${lead}
-
 <i>${date}</i>
-
 <b><a href="${url}">Посилання</a></b>
         `;
 
