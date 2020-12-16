@@ -1,11 +1,11 @@
 require('dotenv').config();
 
 const {bot} = require('./botSetup');
-const {Button, BotAnswer, RegEx} = require('./strings');
-const {State} = require('./consts');
-const Keyboard = require('./keyboards').Keyboard;
-const {ArticlesManager} = require('./ApiManagers/articlesManager');
-const {NewsManager} = require('./ApiManagers/newsManager');
+const {Button, BotAnswer, RegEx} = require('./consts/strings');
+const {State} = require('./consts/consts');
+const Keyboard = require('./consts/keyboards').Keyboard;
+const {ArticlesManager} = require('./apiManagers/articlesManager');
+const {NewsManager} = require('./apiManagers/newsManager');
 
 const news = new NewsManager(bot);
 let state = State.regular;
