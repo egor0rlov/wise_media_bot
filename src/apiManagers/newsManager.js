@@ -4,7 +4,7 @@ const NewsAPI = require('newsapi');
 const NEWS_TOKEN = process.env.NEWS_API_TOKEN;
 const news = new NewsAPI(NEWS_TOKEN);
 const dayjs = require('dayjs');
-const {BotAnswer} = require('../strings');
+const {BotAnswer} = require('../consts/strings');
 
 exports.NewsManager = class {
     constructor(bot) {
