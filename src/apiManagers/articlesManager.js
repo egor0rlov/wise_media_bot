@@ -1,23 +1,24 @@
 require('dotenv').config();
 
 const fetch = require('node-fetch');
-const {Button} = require('../consts/strings');
+const {Button, SimpleString} = require('../consts/strings');
+const {articlesHost} = require('../consts/consts');
 
 exports.ArticlesManager = class {
     constructor(bot) {
         this.bot = bot;
         this.inlinePageNumber = 0;
-        this.nextPage = 1;
-        this.prevPage = -1;
-        this.pageNumber = 0;
-        this.articlesHost = 'https://telegra.ph/';
+        this.nextPage = '1';
+        this.prevPage = '-1';
+        this.pageNumber = '0';
+        this.articlesHost = articlesHost;
     }
 
     async fetchArticles() {
         const response = await fetch(process.env.ARTICLES_URL);
         const body = await response.text();
 
-        this.articles = JSON.parse(body);
+        this.articlesList = JSON.parse(body);
     }
 
     _formArticlesPage() {
@@ -26,13 +27,13 @@ exports.ArticlesManager = class {
 
         const step = 10;
         const startIndex = this.inlinePageNumber * step;
-        const endIndex = (this.articles.length - startIndex - step) < 0 ? this.articles.length : startIndex + step;
+        const endIndex = (this.articlesList.length - startIndex - step) < 0 ? this.articlesList.length : startIndex + step;
 
         const buttonsInRowAmount = 5;
         let indexOfCurrentRow = 0;
 
         for (let i = startIndex; i < endIndex; i++) {
-            const article = this.articles[i];
+            const article = this.articlesList[i];
             const articleNumeration = ((i % step) + 1); //From 1 to 10.
 
             articlesText = articlesText.concat(`<b>${articleNumeration}:</b> ${article.name}`) + '\n';
@@ -54,8 +55,8 @@ exports.ArticlesManager = class {
 
     _formNavigationButtons() {
         const currentPage = this.inlinePageNumber + 1;
-        const arrowButtons = [{text: Button.page + ': ' + currentPage, callback_data: this.pageNumber}];
-        const lastArticlesPage = Math.ceil(this.articles.length / 10);
+        const arrowButtons = [{text: SimpleString.page + ': ' + currentPage, callback_data: this.pageNumber}];
+        const lastArticlesPage = Math.ceil(this.articlesList.length / 10);
 
         if (currentPage !== 1) {
             arrowButtons.unshift({text: Button.arrowPrevious, callback_data: this.prevPage});
@@ -97,7 +98,8 @@ exports.ArticlesManager = class {
         const data = query.data;
         const chatId = query.message.chat.id;
         const linkToSend = this.articlesHost + data;
+        const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`
 
-        await this.bot.sendMessage(chatId, linkToSend);
+        await this.bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
     }
 }

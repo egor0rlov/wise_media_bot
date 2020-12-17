@@ -4,7 +4,7 @@ const NewsAPI = require('newsapi');
 const NEWS_TOKEN = process.env.NEWS_API_TOKEN;
 const news = new NewsAPI(NEWS_TOKEN);
 const dayjs = require('dayjs');
-const {BotAnswer} = require('../consts/strings');
+const {BotAnswer, SimpleString} = require('../consts/strings');
 
 exports.NewsManager = class {
     constructor(bot) {
@@ -20,27 +20,18 @@ exports.NewsManager = class {
             from: this.pastWeek
         }).then(response => response.articles);
 
-        this.news = articles;
+        this.newsList = articles;
     }
 
     async sendNews(chatId) {
-        const newsAmount = this.news.length < this.requestArticlesAmount ? this.news.length : this.requestArticlesAmount;
+        const newsAmount = this.newsList.length < this.requestArticlesAmount ? this.newsList.length : this.requestArticlesAmount;
 
         for (let i = 0; i <= newsAmount - 1; i++) {
-            const article = this.news[i];
-
-            const source = article.source.name;
-            const title = article.title;
-            const lead = article.description;
-            const date = dayjs(article.publishedAt).format('DD/MM/YYYY');
-            const url = article.url;
-
-            const html = this._getArticleInfoHtml(i, source, title, lead, date, url);
+            const article = this.newsList[i];
+            const html = this._getArticleInfoHtml(i, article);
 
             try {
-                await this.bot.sendMessage(chatId, html, {
-                    parse_mode: 'HTML'
-                });
+                await this.bot.sendMessage(chatId, html, {parse_mode: 'HTML'});
             } catch (e) {
                 await this.bot.sendMessage(chatId, BotAnswer.invalidDataNews);
 
@@ -49,11 +40,16 @@ exports.NewsManager = class {
         }
     }
 
-    _getArticleInfoHtml(articleIndex, source, title, lead, date, url) {
+    _getArticleInfoHtml(articleIndex, article) {
+        const source = article.source.name;
+        const title = article.title;
+        const lead = article.description;
+        const date = dayjs(article.publishedAt).format('DD/MM/YYYY');
+        const url = article.url;
         const html = `
 <b>${articleIndex + 1}:</b>
 
-<i>Ресурс: ${source}</i>
+<i>${SimpleString.resource}: ${source}</i>
 
 <b>${title}</b>
 
@@ -61,7 +57,7 @@ ${lead}
 
 <i>${date}</i>
 
-<b><a href="${url}">Посилання</a></b>
+<b><a href="${url}">${SimpleString.link}</a></b>
         `;
 
         return html;

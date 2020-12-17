@@ -44,9 +44,9 @@ bot.onText(RegEx.materials, async (msg) => {
 bot.on('callback_query', async (query) => {
     const data = query.data;
 
-    if (articles && (data === '1' || data === '-1')) {
+    if (articles.articlesList && (data === articles.nextPage || data === articles.prevPage)) {
         await articles.updateInlineMessage(query);
-    } else if (data !== '0') {
+    } else if (data !== articles.pageNumber) {
         await articles.sendArticleLink(query);
     }
 });
@@ -79,7 +79,7 @@ bot.on('message', async (msg) => {
 
         await news.fetchNewsFromWeb(msg.text);
 
-        if (news.news.length) {
+        if (news.newsList.length) {
             await news.sendNews(chatId);
 
             await bot.sendMessage(chatId, BotAnswer.anythingElse, {
