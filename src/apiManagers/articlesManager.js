@@ -5,20 +5,87 @@ const {Button, SimpleString} = require('../consts/strings');
 const {articlesHost} = require('../consts/consts');
 
 exports.ArticlesManager = class {
+    _bot;
+    articlesList;
+    _articlesHost;
+    pageNumber;
+    _inlinePageNumber;
+    nextPage;
+    prevPage;
+    _lastListMessageId;
+    _lastMaterialsRequestId;
+
     constructor(bot) {
-        this.bot = bot;
-        this.inlinePageNumber = 0;
+        this._bot = bot;
         this.nextPage = '1';
         this.prevPage = '-1';
         this.pageNumber = '0';
-        this.articlesHost = articlesHost;
+        this._articlesHost = articlesHost;
     }
 
     async fetchArticles() {
+        this._inlinePageNumber = 0;
         const response = await fetch(process.env.ARTICLES_URL);
         const body = await response.text();
 
         this.articlesList = JSON.parse(body);
+    }
+
+    async sendArticlesList(msg) {
+        const chatId = msg.chat.id;
+        const data = this._formArticlesPage();
+
+        await this._deleteLastMaterialsRequest(chatId)
+            .then(() => this._setLastMaterialsRequestId(msg));
+        await this._deleteLastArticlesList(chatId);
+
+        await this._bot.sendMessage(chatId, data.text, {
+            parse_mode: 'HTML',
+            reply_markup: {inline_keyboard: data.keyboard}
+        })
+            .then((sentMessage) => this._setLastArticlesListId(sentMessage));
+    }
+
+    async updateInlineMessage(query) {
+        const data = query.data;
+        this._inlinePageNumber = this._inlinePageNumber + Number(data);
+
+        const chatId = query.message.chat.id;
+        const messageId = query.message.message_id;
+        const articlesData = this._formArticlesPage();
+
+        await this._bot.editMessageText(articlesData.text, {message_id: messageId, chat_id: chatId, parse_mode: 'HTML'});
+        await this._bot.editMessageReplyMarkup({inline_keyboard: articlesData.keyboard},
+            {message_id: messageId, chat_id: chatId});
+    }
+
+    async sendArticleLink(query) {
+        const data = query.data;
+        const chatId = query.message.chat.id;
+        const linkToSend = this._articlesHost + data;
+        const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`
+
+        await this._bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
+    }
+
+    _setLastMaterialsRequestId(message) {
+        this._lastMaterialsRequestId = message.message_id;
+    }
+
+    async _deleteLastMaterialsRequest(chatId) {
+        if (this._lastMaterialsRequestId) {
+            await this._bot.deleteMessage(chatId, this._lastMaterialsRequestId);
+        }
+    }
+
+    _setLastArticlesListId(message) {
+        this._lastListMessageId = message.message_id;
+    }
+
+    async _deleteLastArticlesList(chatId) {
+        if (this._lastListMessageId) {
+            await this._bot.deleteMessage(chatId, this._lastListMessageId);
+        }
     }
 
     _formArticlesPage() {
@@ -26,7 +93,7 @@ exports.ArticlesManager = class {
         const buttons = [[]];
 
         const step = 10;
-        const startIndex = this.inlinePageNumber * step;
+        const startIndex = this._inlinePageNumber * step;
         const endIndex = (this.articlesList.length - startIndex - step) < 0 ? this.articlesList.length : startIndex + step;
 
         const buttonsInRowAmount = 5;
@@ -54,7 +121,7 @@ exports.ArticlesManager = class {
     }
 
     _formNavigationButtons() {
-        const currentPage = this.inlinePageNumber + 1;
+        const currentPage = this._inlinePageNumber + 1;
         const arrowButtons = [{text: SimpleString.page + ': ' + currentPage, callback_data: this.pageNumber}];
         const lastArticlesPage = Math.ceil(this.articlesList.length / 10);
 
@@ -67,39 +134,5 @@ exports.ArticlesManager = class {
         }
 
         return arrowButtons;
-    }
-
-    async sendArticlesList(msg) {
-        const chatId = msg.chat.id;
-        const data = this._formArticlesPage();
-
-        await this.bot.sendMessage(chatId, data.text, {
-            parse_mode: 'HTML',
-            reply_markup: {
-                inline_keyboard: data.keyboard
-            }
-        });
-    }
-
-    async updateInlineMessage(query) {
-        const data = query.data;
-        this.inlinePageNumber = this.inlinePageNumber + Number(data);
-
-        const chatId = query.message.chat.id;
-        const messageId = query.message.message_id;
-        const articlesData = this._formArticlesPage();
-
-        await this.bot.editMessageText(articlesData.text, {message_id: messageId, chat_id: chatId, parse_mode: 'HTML'});
-        await this.bot.editMessageReplyMarkup({inline_keyboard: articlesData.keyboard},
-            {message_id: messageId, chat_id: chatId});
-    }
-
-    async sendArticleLink(query) {
-        const data = query.data;
-        const chatId = query.message.chat.id;
-        const linkToSend = this.articlesHost + data;
-        const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`
-
-        await this.bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
     }
 }
