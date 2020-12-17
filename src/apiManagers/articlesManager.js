@@ -1,14 +1,16 @@
 require('dotenv').config();
+
 const fetch = require('node-fetch');
+const {Button} = require('../consts/strings');
 
 exports.ArticlesManager = class {
-    constructor(bot, button) {
+    constructor(bot) {
         this.bot = bot;
-        this.button = button;
         this.inlinePageNumber = 0;
         this.nextPage = 1;
         this.prevPage = -1;
         this.pageNumber = 0;
+        this.articlesHost = 'https://telegra.ph/';
     }
 
     async fetchArticles() {
@@ -52,15 +54,15 @@ exports.ArticlesManager = class {
 
     _formNavigationButtons() {
         const currentPage = this.inlinePageNumber + 1;
-        const arrowButtons = [{text: '📄: ' + currentPage, callback_data: this.pageNumber}];
+        const arrowButtons = [{text: Button.page + ': ' + currentPage, callback_data: this.pageNumber}];
         const lastArticlesPage = Math.ceil(this.articles.length / 10);
 
         if (currentPage !== 1) {
-            arrowButtons.unshift({text: this.button.arrowPrevious, callback_data: this.prevPage});
+            arrowButtons.unshift({text: Button.arrowPrevious, callback_data: this.prevPage});
         }
 
         if (currentPage !== lastArticlesPage) {
-            arrowButtons.push({text: this.button.arrowNext, callback_data: this.nextPage});
+            arrowButtons.push({text: Button.arrowNext, callback_data: this.nextPage});
         }
 
         return arrowButtons;
@@ -89,5 +91,13 @@ exports.ArticlesManager = class {
         await this.bot.editMessageText(articlesData.text, {message_id: messageId, chat_id: chatId, parse_mode: 'HTML'});
         await this.bot.editMessageReplyMarkup({inline_keyboard: articlesData.keyboard},
             {message_id: messageId, chat_id: chatId});
+    }
+
+    async sendArticleLink(query) {
+        const data = query.data;
+        const chatId = query.message.chat.id;
+        const linkToSend = this.articlesHost + data;
+
+        await this.bot.sendMessage(chatId, linkToSend);
     }
 }

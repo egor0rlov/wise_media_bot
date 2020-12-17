@@ -1,7 +1,3 @@
-/**
- * Command messages from user:
- */
-
 const requestStrings = {
     toMain: 'На головну 🌐',
     materials: 'Матеріали 🧾',
@@ -9,11 +5,8 @@ const requestStrings = {
     anotherRequest: 'Інший запит 🗳',
     arrowNext: '▶',
     arrowPrevious: '◀',
+    page: '📄',
 };
-
-/**
- * Bot's responses:
- */
 
 exports.BotAnswer = {
     whatDoYouWant: 'Що вас цікавить? 🧐',
@@ -24,10 +17,6 @@ exports.BotAnswer = {
     isItSticker: 'А словами? 🧐',
 };
 
-/**
- * Buttons using command strings:
- */
-
 exports.Button = {
     toMain: requestStrings.toMain,
     materials: requestStrings.materials,
@@ -35,11 +24,8 @@ exports.Button = {
     anotherRequest: requestStrings.anotherRequest,
     arrowNext: requestStrings.arrowNext,
     arrowPrevious: requestStrings.arrowPrevious,
+    page: requestStrings.page,
 };
-
-/**
- * Regular expressions using command strings:
- */
 
 exports.RegEx = {
     start: new RegExp('/start'),

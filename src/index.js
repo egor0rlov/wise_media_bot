@@ -7,9 +7,9 @@ const Keyboard = require('./consts/keyboards').Keyboard;
 const {ArticlesManager} = require('./apiManagers/articlesManager');
 const {NewsManager} = require('./apiManagers/newsManager');
 
+const articles = new ArticlesManager(bot);
 const news = new NewsManager(bot);
 let state = State.regular;
-let articles;
 
 //Main screen handlers:
 bot.onText(RegEx.start, async (msg) => {
@@ -36,8 +36,6 @@ bot.onText(RegEx.toMain, (async (msg) => {
 
 //Materials handlers:
 bot.onText(RegEx.materials, async (msg) => {
-    articles = new ArticlesManager(bot, Button);
-
     await articles.fetchArticles().then(() => {
         articles.sendArticlesList(msg);
     });
@@ -49,10 +47,7 @@ bot.on('callback_query', async (query) => {
     if (articles && (data === '1' || data === '-1')) {
         await articles.updateInlineMessage(query);
     } else if (data !== '0') {
-        const chatId = query.message.chat.id;
-        const linkToSend = 'https://telegra.ph/' + data;
-
-        await bot.sendMessage(chatId, linkToSend);
+        await articles.sendArticleLink(query);
     }
 });
 
