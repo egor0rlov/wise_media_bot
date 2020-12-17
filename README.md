@@ -1,6 +1,5 @@
-# To use it:
-1. Rename .env_variables to .env
-2. Paste your Telegram bot token (can be obtained from https://t.me/botfather)
-3. Paste your NewsAPI token (can be obtained from https://newsapi.org/)
-4. Paste yor articles (written on telegra.ph) in array from "articlesManager.js" file
-5. (Optional) Rename strings according to your needs in "strings.js" file
+# WiseMediaBot
+Telegram bot which provides access to articles about media literacy and media monitoring.
+
+__Link:__ https://t.me/wise_media_bot  
+__Telegram username:__ @wise_media_bot
