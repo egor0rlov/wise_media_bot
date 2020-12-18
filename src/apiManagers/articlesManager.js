@@ -54,18 +54,23 @@ exports.ArticlesManager = class {
         const messageId = query.message.message_id;
         const articlesData = this._formArticlesPage();
 
-        await this._bot.editMessageText(articlesData.text, {message_id: messageId, chat_id: chatId, parse_mode: 'HTML'});
+        await this._bot.editMessageText(articlesData.text, {
+            message_id: messageId,
+            chat_id: chatId,
+            parse_mode: 'HTML'
+        });
         await this._bot.editMessageReplyMarkup({inline_keyboard: articlesData.keyboard},
             {message_id: messageId, chat_id: chatId});
+        await this._bot.answerCallbackQuery(query.id);
     }
 
     async sendArticleLink(query) {
-        const data = query.data;
         const chatId = query.message.chat.id;
-        const linkToSend = this._articlesHost + data;
+        const linkToSend = this._articlesHost + query.data;
         const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`
 
         await this._bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
+        await this._bot.answerCallbackQuery(query.id);
     }
 
     _setLastMaterialsRequestId(message) {

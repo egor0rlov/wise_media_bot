@@ -38,4 +38,5 @@ exports.SimpleString = {
     article: 'Стаття',
     resource: 'Ресурс',
     link: 'Посилання',
+    fetchingArticles: 'Завантажую матеріали',
 }
