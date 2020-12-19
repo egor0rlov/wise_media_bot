@@ -1,12 +1,11 @@
-require('dotenv').config();
-
 const {bot} = require('./botSetup');
+const {WiseMediaUserModel, clearPageNumberOrAddUser} = require('./apiManagers/mongoManager');
+const WiseUser = WiseMediaUserModel;
 const {Button, BotAnswer, RegEx} = require('./consts/strings');
 const {State} = require('./consts/consts');
 const Keyboard = require('./consts/keyboards').Keyboard;
 const {ArticlesManager} = require('./apiManagers/articlesManager');
 const {NewsManager} = require('./apiManagers/newsManager');
-
 const articles = new ArticlesManager(bot);
 const news = new NewsManager(bot);
 let state = State.regular;
@@ -36,7 +35,8 @@ bot.onText(RegEx.toMain, (async (msg) => {
 
 //Materials handlers:
 bot.onText(RegEx.materials, async (msg) => {
-    await articles.fetchArticles().then(() => {
+    await clearPageNumberOrAddUser(WiseUser, msg);
+    await articles.fetchArticles(msg).then(() => {
         articles.sendArticlesList(msg);
     });
 });
@@ -46,7 +46,12 @@ bot.on('callback_query', async (query) => {
 
     if (articles.articlesList && (data === articles.nextPage || data === articles.prevPage)) {
         await articles.updateInlineMessage(query);
-    } else if (data !== articles.pageNumber) {
+    } else if (data === articles.firstPage) {
+        await articles.updateInlineMessage(query, 0);
+    } else if (data === articles.randomPage) {
+        const randomPage = Math.floor(Math.random() * Math.floor(articles.articlesList.length / 10));
+        await articles.updateInlineMessage(query, randomPage);
+    } else {
         await articles.sendArticleLink(query);
     }
 });

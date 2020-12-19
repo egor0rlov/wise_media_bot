@@ -19,6 +19,7 @@
   "dependencies": {
     "dayjs": "^1.9.6",
     "dotenv": "^8.2.0",
+    "mongoose": "^5.11.8",
     "newsapi": "^2.4.1",
     "node-fetch": "^2.6.1",
     "node-telegram-bot-api": "^0.50.0"

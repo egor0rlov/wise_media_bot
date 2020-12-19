@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const {WiseMediaUserModel} = require('./mongoManager');
+const WiseUser = WiseMediaUserModel;
 const fetch = require('node-fetch');
 const {Button, SimpleString} = require('../consts/strings');
 const {articlesHost} = require('../consts/consts');
@@ -8,23 +10,23 @@ exports.ArticlesManager = class {
     _bot;
     articlesList;
     _articlesHost;
-    pageNumber;
-    _inlinePageNumber;
+    firstPage;
+    randomPage;
     nextPage;
     prevPage;
-    _lastListMessageId;
-    _lastMaterialsRequestId;
 
     constructor(bot) {
         this._bot = bot;
         this.nextPage = '1';
         this.prevPage = '-1';
-        this.pageNumber = '0';
+        this.firstPage = '0';
+        this.randomPage = '-777';
         this._articlesHost = articlesHost;
+
+        this.fetchArticles();
     }
 
     async fetchArticles() {
-        this._inlinePageNumber = 0;
         const response = await fetch(process.env.ARTICLES_URL);
         const body = await response.text();
 
@@ -32,36 +34,51 @@ exports.ArticlesManager = class {
     }
 
     async sendArticlesList(msg) {
+        const userId = msg.from.id;
         const chatId = msg.chat.id;
-        const data = this._formArticlesPage();
+        const userData = await WiseUser.findOne({tgId: userId});
+        const data = this._formArticlesPage(userData.inlinePageNumber);
 
-        await this._deleteLastMaterialsRequest(chatId)
-            .then(() => this._setLastMaterialsRequestId(msg));
-        await this._deleteLastArticlesList(chatId);
+        await this._deleteMessageIfPresent(chatId, userData.lastMaterialsRequestId)
+        await this._deleteMessageIfPresent(chatId, userData.lastListMessageId);
 
         await this._bot.sendMessage(chatId, data.text, {
             parse_mode: 'HTML',
             reply_markup: {inline_keyboard: data.keyboard}
         })
-            .then((sentMessage) => this._setLastArticlesListId(sentMessage));
+            .then((res) => {
+                WiseUser.updateOne({tgId: userId}, {
+                    lastListMessageId: res.message_id,
+                    lastMaterialsRequestId: msg.message_id
+                }, {}, (err, res) => {
+                    if (err) console.log(err);
+                });
+            });
     }
 
-    async updateInlineMessage(query) {
+    async updateInlineMessage(query, directPage = -1) {
         const data = query.data;
-        this._inlinePageNumber = this._inlinePageNumber + Number(data);
-
         const chatId = query.message.chat.id;
         const messageId = query.message.message_id;
-        const articlesData = this._formArticlesPage();
+        const userId = query.from.id;
+        const userData = await WiseUser.findOne({tgId: userId});
+        const changedPageNumber = directPage !== -1 ? directPage : userData.inlinePageNumber + Number(data);
+        const articlesData = this._formArticlesPage(changedPageNumber);
 
-        await this._bot.editMessageText(articlesData.text, {
-            message_id: messageId,
-            chat_id: chatId,
-            parse_mode: 'HTML'
-        });
-        await this._bot.editMessageReplyMarkup({inline_keyboard: articlesData.keyboard},
-            {message_id: messageId, chat_id: chatId});
-        await this._bot.answerCallbackQuery(query.id);
+        await WiseUser.updateOne({tgId: userId}, {inlinePageNumber: changedPageNumber});
+
+        try {
+            await this._bot.editMessageText(articlesData.text, {
+                message_id: messageId,
+                chat_id: chatId,
+                parse_mode: 'HTML',
+                reply_markup: {inline_keyboard: articlesData.keyboard}
+            });
+        } catch (e) {
+            console.error(e);
+        } finally {
+            await this._bot.answerCallbackQuery(query.id);
+        }
     }
 
     async sendArticleLink(query) {
@@ -73,42 +90,28 @@ exports.ArticlesManager = class {
         await this._bot.answerCallbackQuery(query.id);
     }
 
-    _setLastMaterialsRequestId(message) {
-        this._lastMaterialsRequestId = message.message_id;
-    }
-
-    async _deleteLastMaterialsRequest(chatId) {
-        if (this._lastMaterialsRequestId) {
-            await this._bot.deleteMessage(chatId, this._lastMaterialsRequestId);
+    async _deleteMessageIfPresent(chatId, messageId) {
+        if (messageId) {
+            await this._bot.deleteMessage(chatId, messageId);
         }
     }
 
-    _setLastArticlesListId(message) {
-        this._lastListMessageId = message.message_id;
-    }
-
-    async _deleteLastArticlesList(chatId) {
-        if (this._lastListMessageId) {
-            await this._bot.deleteMessage(chatId, this._lastListMessageId);
-        }
-    }
-
-    _formArticlesPage() {
-        let articlesText = ``;
+    _formArticlesPage(inlinePageNumber) {
+        let articlesText = `<b>${SimpleString.page + ' ' + SimpleString.pageWord + ' ' + (inlinePageNumber + 1)}</b>\n\n`;
         const buttons = [[]];
-
         const step = 10;
-        const startIndex = this._inlinePageNumber * step;
+        const startIndex = inlinePageNumber * step;
         const endIndex = (this.articlesList.length - startIndex - step) < 0 ? this.articlesList.length : startIndex + step;
-
         const buttonsInRowAmount = 5;
         let indexOfCurrentRow = 0;
 
         for (let i = startIndex; i < endIndex; i++) {
             const article = this.articlesList[i];
             const articleNumeration = ((i % step) + 1); //From 1 to 10.
+            const articleLine = `<b>${articleNumeration}:</b> ${article.name}`;
 
-            articlesText = articlesText.concat(`<b>${articleNumeration}:</b> ${article.name}`) + '\n';
+            articlesText = articlesText.concat(articleLine);
+            articlesText += `\n${SimpleString.divisor}\n`;
 
             buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: article.queue});
 
@@ -118,16 +121,19 @@ exports.ArticlesManager = class {
             }
         }
 
-        const arrowButtons = this._formNavigationButtons();
+        const arrowButtons = this._formNavigationButtons(inlinePageNumber);
 
         buttons.push(arrowButtons);
 
         return {text: articlesText, keyboard: buttons};
     }
 
-    _formNavigationButtons() {
-        const currentPage = this._inlinePageNumber + 1;
-        const arrowButtons = [{text: SimpleString.page + ': ' + currentPage, callback_data: this.pageNumber}];
+    _formNavigationButtons(inlinePageNumber) {
+        const currentPage = inlinePageNumber + 1;
+        const arrowButtons = [
+            {text: SimpleString.beginning, callback_data: this.firstPage},
+            {text: SimpleString.shuffle, callback_data: this.randomPage},
+        ];
         const lastArticlesPage = Math.ceil(this.articlesList.length / 10);
 
         if (currentPage !== 1) {

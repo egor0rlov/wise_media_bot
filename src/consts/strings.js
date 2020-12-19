@@ -39,4 +39,8 @@ exports.SimpleString = {
     resource: 'Ресурс',
     link: 'Посилання',
     fetchingArticles: 'Завантажую матеріали',
+    pageWord: 'Сторінка',
+    beginning: '↩',
+    shuffle: '🔀',
+    divisor: '➖',
 }
