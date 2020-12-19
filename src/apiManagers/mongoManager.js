@@ -35,8 +35,28 @@ exports.clearPageNumberOrAddUser = async function (WiseUser, message) {
         }
     });
 }
+exports.databaseCleaner = async function (WiseUser) {
+    const sessionDurationHours = 2;
+    const sessionDurationMilliseconds = sessionDurationHours * 60 * 60 * 1000;
 
-async function connectToDb(dbConnectionUri){
+    setInterval(async () => {
+        const hoursFromNow = new Date().getHours() - sessionDurationHours;
+        const inMilliseconds = new Date().setHours(hoursFromNow);
+
+        WiseUser.find({}).where('dateAdded').lte(inMilliseconds).exec((error, response) => {
+            if (error) console.log(error);
+            if (response.length) {
+                const idsToDelete = response.map((record) => record.id);
+
+                WiseUser.deleteMany({_id: {$in: idsToDelete}}, (err, response) => {
+                    if (err) console.error(err);
+                });
+            }
+        });
+    }, sessionDurationMilliseconds);
+}
+
+async function connectToDb(dbConnectionUri) {
     await mongoose.connect(dbConnectionUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
