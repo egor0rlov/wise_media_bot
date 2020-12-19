@@ -69,7 +69,7 @@ exports.cleanDatabase = async function (WiseUser, bot, msg) {
                 bot.sendMessage(getChatId(msg), BotAnswer.noUsersToDelete);
             }
         } else {
-            bot.sendMessage(getChatId(msg), BotAnswer.noUsersToDelete);
+            bot.sendMessage(getChatId(msg), BotAnswer.noUsers);
         }
     });
 }
