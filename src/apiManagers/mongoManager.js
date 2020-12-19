@@ -41,8 +41,7 @@ exports.setZeroPageOrAddUser = async function (WiseUser, message) {
 }
 
 exports.cleanDatabase = async function (WiseUser, bot, msg) {
-    const sessionDurationHours = 1;
-    const sessionDurationSeconds = 40;
+    const sessionDurationMinutes = 45;
 
     WiseUser.find({}).exec((error, response) => {
         if (error) console.log(error);
@@ -52,9 +51,9 @@ exports.cleanDatabase = async function (WiseUser, bot, msg) {
 
             users.forEach((user) => {
                 const differenceWithNow = Date.now() - new Date(user.dateAdded);
-                const differenceInHours = Time.fromMilliseconds.toSeconds(differenceWithNow);
+                const differenceInHours = Time.fromMilliseconds.toMinutes(differenceWithNow);
 
-                if (differenceInHours >= sessionDurationSeconds) {
+                if (differenceInHours >= sessionDurationMinutes) {
                     deleteMaterialsMessages(user, bot);
                     userIdsToDelete.push(user._id);
                 }
