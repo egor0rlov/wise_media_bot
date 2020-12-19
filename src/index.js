@@ -1,5 +1,5 @@
 const {bot} = require('./botSetup');
-const {WiseMediaUserModel, clearPageNumberOrAddUser, databaseCleaner} = require('./apiManagers/mongoManager');
+const {WiseMediaUserModel, setZeroPageOrAddUser, runDatabaseCleaner} = require('./apiManagers/mongoManager');
 const WiseUser = WiseMediaUserModel;
 const {Button, BotAnswer, RegEx} = require('./consts/strings');
 const {State} = require('./consts/consts');
@@ -10,7 +10,7 @@ const articles = new ArticlesManager(bot);
 const news = new NewsManager(bot);
 let state = State.regular;
 
-databaseCleaner(WiseUser);
+runDatabaseCleaner(WiseUser, bot);
 
 //Main screen handlers:
 bot.onText(RegEx.start, async (msg) => {
@@ -37,7 +37,7 @@ bot.onText(RegEx.toMain, (async (msg) => {
 
 //Materials handlers:
 bot.onText(RegEx.materials, async (msg) => {
-    await clearPageNumberOrAddUser(WiseUser, msg);
+    await setZeroPageOrAddUser(WiseUser, msg);
     await articles.fetchArticles(msg).then(() => {
         articles.sendArticlesList(msg);
     });

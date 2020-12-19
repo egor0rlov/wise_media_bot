@@ -110,8 +110,8 @@ exports.ArticlesManager = class {
             const articleNumeration = ((i % step) + 1); //From 1 to 10.
             const articleLine = `<b>${articleNumeration}:</b> ${article.name}`;
 
-            articlesText = articlesText.concat(articleLine);
             articlesText += `\n${SimpleString.divisor}\n`;
+            articlesText = articlesText.concat(articleLine);
 
             buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: article.queue});
 
