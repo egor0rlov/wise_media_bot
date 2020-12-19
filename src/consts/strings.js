@@ -1,3 +1,5 @@
+const mascot = '🧐';
+
 const requestString = {
     toMain: 'На головну 🌐',
     materials: 'Матеріали 🧾',
@@ -5,15 +7,27 @@ const requestString = {
     anotherRequest: 'Інший запит 🗳',
     arrowNext: '▶',
     arrowPrevious: '◀',
+
+    //Admin buttons strings:
+    adminMenu: 'Меню адміна 🐌',
+    clearUsers: 'Оновити базу даних ♻',
 };
 
 exports.BotAnswer = {
-    whatDoYouWant: 'Що вас цікавить? 🧐',
+    whatDoYouWant: 'Що вас цікавить?' + mascot,
     enterRequest: 'Введіть запит 📝',
     invalidDataNews: 'Стаття містить невалідні дані. ❌',
-    anythingElse: 'Щось ще? 🧐',
+    anythingElse: 'Щось ще?' + mascot,
     noNews: 'По цьому запиту немає новин ❌',
-    isItSticker: 'А словами? 🧐',
+    isItSticker: 'А словами?' + mascot,
+    welcomeAdmin: 'Давно не бачились ' + mascot,
+    youAreNotAdmin: 'Ти не адмін ' + mascot,
+    noUsersToDelete: 'Користувачів з перевищенім часом сесії немає ⚠',
+    noUsers: 'Жодного користувача в базі ⚠',
+    usersDeleted: (amount) => {
+        const ending = amount === 1 ? 'користувача ✅' : 'користувачів ✅';
+        return `Видалено ${amount} ` + ending;
+    },
 };
 
 exports.Button = {
@@ -23,6 +37,8 @@ exports.Button = {
     anotherRequest: requestString.anotherRequest,
     arrowNext: requestString.arrowNext,
     arrowPrevious: requestString.arrowPrevious,
+    adminMenu: requestString.adminMenu,
+    clearUsers: requestString.clearUsers,
 };
 
 exports.RegEx = {
@@ -31,6 +47,8 @@ exports.RegEx = {
     materials: new RegExp(requestString.materials),
     newsSearch: new RegExp(requestString.newsSearch),
     anotherRequest: new RegExp(requestString.anotherRequest),
+    adminMenu: new RegExp(requestString.adminMenu),
+    clearUsers: new RegExp(requestString.clearUsers),
 };
 
 exports.SimpleString = {

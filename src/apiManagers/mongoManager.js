@@ -1,6 +1,7 @@
 const dbConnectionUri = process.env.MONGO_URI;
 const mongoose = require('mongoose');
-const {Time} = require("../utils");
+const {Time, getChatId} = require("../utils");
+const {BotAnswer} = require('../consts/strings');
 const Schema = mongoose.Schema;
 const WiseMediaUserSchema = new Schema({
     tgChatId: Number,
@@ -14,6 +15,7 @@ const WiseMediaUserSchema = new Schema({
 
 connectToDb(dbConnectionUri);
 
+//Export functions:
 exports.WiseMediaUserModel = mongoose.model('WiseMediaUser', WiseMediaUserSchema);
 
 exports.setZeroPageOrAddUser = async function (WiseUser, message) {
@@ -38,34 +40,42 @@ exports.setZeroPageOrAddUser = async function (WiseUser, message) {
     });
 }
 
-exports.runDatabaseCleaner = async function (WiseUser, bot) {
+exports.cleanDatabase = async function (WiseUser, bot, msg) {
     const sessionDurationHours = 1;
-    const sessionDurationMilliseconds = Time.fromHoursToMilliseconds(sessionDurationHours);
+    const sessionDurationSeconds = 40;
 
-    setInterval(async () => {
-        WiseUser.find({}).exec((error, response) => {
-            if (error) console.log(error);
-            if (response.length) {
-                const users = response;
-                const userIdsToDelete = [];
+    WiseUser.find({}).exec((error, response) => {
+        if (error) console.log(error);
+        if (response.length) {
+            const users = response;
+            const userIdsToDelete = [];
 
-                users.forEach((user) => {
-                    const differenceWithNow = Date.now() - new Date(user.dateAdded);
-                    const differenceInHours = Time.fromMillisecondsToHours(differenceWithNow);
+            users.forEach((user) => {
+                const differenceWithNow = Date.now() - new Date(user.dateAdded);
+                const differenceInHours = Time.fromMilliseconds.toSeconds(differenceWithNow);
 
-                    if (differenceInHours >= sessionDurationHours) {
-                        deleteMaterials(user, bot);
-                        userIdsToDelete.push(user._id);
-                    }
-                });
+                if (differenceInHours >= sessionDurationSeconds) {
+                    deleteMaterialsMessages(user, bot);
+                    userIdsToDelete.push(user._id);
+                }
+            });
 
+            console.log(userIdsToDelete)
+
+            if (userIdsToDelete.length > 0) {
                 deleteUsersIfPresent(userIdsToDelete, WiseUser);
+                bot.sendMessage(getChatId(msg), BotAnswer.usersDeleted(userIdsToDelete.length));
+            } else if (userIdsToDelete.length === 0) {
+                bot.sendMessage(getChatId(msg), BotAnswer.noUsersToDelete);
             }
-        });
-    }, sessionDurationMilliseconds);
+        } else {
+            bot.sendMessage(getChatId(msg), BotAnswer.noUsersToDelete);
+        }
+    });
 }
 
-async function deleteMaterials(user, bot) {
+//Local functions:
+async function deleteMaterialsMessages(user, bot) {
     const chatId = user.tgChatId;
     const lastMaterialsRequestId = user.lastMaterialsRequestId;
     const lastListMessageId = user.lastListMessageId;
@@ -76,9 +86,9 @@ async function deleteMaterials(user, bot) {
     }
 }
 
-async function deleteUsersIfPresent(idsToDelete, WiseUser) {
+function deleteUsersIfPresent(idsToDelete, WiseUser) {
     if (idsToDelete.length) {
-        WiseUser.deleteMany({_id: {$in: idsToDelete}}, (err, response) => {
+        WiseUser.deleteMany({_id: {$in: idsToDelete}}, (err) => {
             if (err) console.error(err);
         });
     }

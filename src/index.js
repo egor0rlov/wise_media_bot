@@ -1,8 +1,9 @@
-const {bot} = require('./botSetup');
-const {WiseMediaUserModel, setZeroPageOrAddUser, runDatabaseCleaner} = require('./apiManagers/mongoManager');
+const {bot} = require('./apiManagers/botSetup');
+const {WiseMediaUserModel, setZeroPageOrAddUser, cleanDatabase} = require('./apiManagers/mongoManager');
 const WiseUser = WiseMediaUserModel;
 const {Button, BotAnswer, RegEx} = require('./consts/strings');
 const {State} = require('./consts/consts');
+const {getChatId, userIsAdmin} = require('./utils');
 const Keyboard = require('./consts/keyboards').Keyboard;
 const {ArticlesManager} = require('./apiManagers/articlesManager');
 const {NewsManager} = require('./apiManagers/newsManager');
@@ -10,27 +11,23 @@ const articles = new ArticlesManager(bot);
 const news = new NewsManager(bot);
 let state = State.regular;
 
-runDatabaseCleaner(WiseUser, bot);
-
 //Main screen handlers:
 bot.onText(RegEx.start, async (msg) => {
-    const chatId = msg.chat.id;
     state = State.regular;
 
-    await bot.sendMessage(chatId, BotAnswer.whatDoYouWant, {
+    await bot.sendMessage(getChatId(msg), BotAnswer.whatDoYouWant, {
         reply_markup: {
-            keyboard: Keyboard.main
+            keyboard: getMainKeyboard(msg)
         },
     });
 });
 
 bot.onText(RegEx.toMain, (async (msg) => {
-    const chatId = msg.chat.id;
     state = State.regular;
 
-    await bot.sendMessage(chatId, BotAnswer.whatDoYouWant, {
+    await bot.sendMessage(getChatId(msg), BotAnswer.whatDoYouWant, {
         reply_markup: {
-            keyboard: Keyboard.main
+            keyboard: getMainKeyboard(msg)
         },
     });
 }));
@@ -38,7 +35,7 @@ bot.onText(RegEx.toMain, (async (msg) => {
 //Materials handlers:
 bot.onText(RegEx.materials, async (msg) => {
     await setZeroPageOrAddUser(WiseUser, msg);
-    await articles.fetchArticles(msg).then(() => {
+    await articles.fetchArticles().then(() => {
         articles.sendArticlesList(msg);
     });
 });
@@ -60,10 +57,9 @@ bot.on('callback_query', async (query) => {
 
 //News request handlers:
 bot.onText(RegEx.newsSearch, async (msg) => {
-    const chatId = msg.chat.id;
     state = State.newsSearcher;
 
-    await bot.sendMessage(chatId, BotAnswer.enterRequest, {
+    await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest, {
         reply_markup: {
             keyboard: Keyboard.toMain
         }
@@ -71,14 +67,13 @@ bot.onText(RegEx.newsSearch, async (msg) => {
 });
 
 bot.onText(RegEx.anotherRequest, async (msg) => {
-    const chatId = msg.chat.id;
     state = State.newsSearcher;
 
-    await bot.sendMessage(chatId, BotAnswer.enterRequest);
+    await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest);
 });
 
 bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
+    const chatId = getChatId(msg);
     const isReadyToSendNews = state === State.newsSearcher && msg.text && msg.text !== Button.toMain;
 
     if (isReadyToSendNews) {
@@ -105,3 +100,41 @@ bot.on('message', async (msg) => {
         await bot.sendMessage(chatId, BotAnswer.isItSticker);
     }
 });
+
+//Admin handlers:
+bot.onText(RegEx.adminMenu, async (msg) => {
+    if (userIsAdmin(msg)) {
+        await bot.sendMessage(getChatId(msg), BotAnswer.welcomeAdmin, {
+            reply_markup: {
+                keyboard: Keyboard.adminMenu
+            }
+        });
+    } else {
+        await bot.sendMessage(getChatId(msg), BotAnswer.youAreNotAdmin);
+    }
+});
+
+bot.onText(RegEx.clearUsers, async (msg) => {
+    if (userIsAdmin(msg)) {
+        await cleanDatabase(WiseUser, bot, msg);
+    } else {
+        await bot.sendMessage(getChatId(msg), BotAnswer.youAreNotAdmin);
+    }
+});
+
+//Functions:
+function getMainKeyboard(msg) {
+    const keyboard = [...Keyboard.main]; //Spread to avoid changing initial buttons array
+
+    if (userIsAdmin(msg)) {
+        keyboard.push([Button.adminMenu]);
+    }
+
+    return keyboard;
+}
+
+function getAdminKeyboard(msg) {
+    if (userIsAdmin(msg)) {
+        return Keyboard.adminMenu;
+    }
+}

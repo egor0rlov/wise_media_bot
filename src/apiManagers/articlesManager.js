@@ -2,9 +2,9 @@ require('dotenv').config();
 
 const {WiseMediaUserModel} = require('./mongoManager');
 const WiseUser = WiseMediaUserModel;
-const fetch = require('node-fetch');
 const {Button, SimpleString} = require('../consts/strings');
 const {articlesHost} = require('../consts/consts');
+const {fetchTelegraph} = require('../utils');
 
 exports.ArticlesManager = class {
     _bot;
@@ -27,10 +27,14 @@ exports.ArticlesManager = class {
     }
 
     async fetchArticles() {
-        const response = await fetch(process.env.ARTICLES_URL);
-        const body = await response.text();
+        await fetchTelegraph().then((response) => {
+            const articles = response.result.pages
+                .map((article) => {
+                    return {name: article.title, queue: article.path}
+                });
 
-        this.articlesList = JSON.parse(body);
+            this.articlesList = articles;
+        });
     }
 
     async sendArticlesList(msg) {
@@ -75,7 +79,9 @@ exports.ArticlesManager = class {
                 reply_markup: {inline_keyboard: articlesData.keyboard}
             });
         } catch (e) {
-            console.error(e);
+            if (!e.message.includes('exactly the same')) {
+                console.error(e);
+            }
         } finally {
             await this._bot.answerCallbackQuery(query.id);
         }
@@ -97,7 +103,7 @@ exports.ArticlesManager = class {
     }
 
     _formArticlesPage(inlinePageNumber) {
-        let articlesText = `<b>${SimpleString.page + ' ' + SimpleString.pageWord + ' ' + (inlinePageNumber + 1)}</b>\n\n`;
+        let articlesText = `<b>${SimpleString.page + ' ' + SimpleString.pageWord + ' ' + (inlinePageNumber + 1)}</b>\n`;
         const buttons = [[]];
         const step = 10;
         const startIndex = inlinePageNumber * step;

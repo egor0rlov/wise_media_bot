@@ -11,4 +11,8 @@ exports.Keyboard = {
         [Button.anotherRequest],
         [Button.toMain],
     ],
+    adminMenu: [
+        [Button.clearUsers],
+        [Button.toMain]
+    ]
 };
