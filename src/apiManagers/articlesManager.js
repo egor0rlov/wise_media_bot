@@ -1,9 +1,8 @@
 require('dotenv').config();
 
-const {WiseMediaUserModel} = require('./mongoManager');
+const {WiseMediaUserModel, getUserBy, updateUserBy} = require('./mongoManager');
 const WiseUser = WiseMediaUserModel;
 const {Button, SimpleString} = require('../consts/strings');
-const {articlesHost} = require('../consts/consts');
 const {fetchTelegraph, drawMiddleDivisor} = require('../utils');
 
 exports.ArticlesManager = class {
@@ -21,7 +20,7 @@ exports.ArticlesManager = class {
         this.prevPage = '-1';
         this.firstPage = '0';
         this.randomPage = '-777';
-        this._articlesHost = articlesHost;
+        this._articlesHost = 'https://telegra.ph/';
 
         this.fetchArticles();
     }
@@ -45,7 +44,7 @@ exports.ArticlesManager = class {
     async sendArticlesList(msg) {
         const userId = msg.from.id;
         const chatId = msg.chat.id;
-        const userData = await WiseUser.findOne({tgId: userId});
+        const userData = await getUserBy(WiseUser, {tgId: userId});
         const data = this._formArticlesPage(userData.inlinePageNumber);
 
         await this._deleteMessageIfPresent(chatId, userData.lastMaterialsRequestId)
@@ -57,11 +56,9 @@ exports.ArticlesManager = class {
             reply_markup: {inline_keyboard: data.keyboard}
         })
             .then((res) => {
-                WiseUser.updateOne({tgId: userId}, {
+                updateUserBy(WiseUser, {tgId: userId}, {
                     lastListMessageId: res.message_id,
                     lastMaterialsRequestId: msg.message_id
-                }, {}, (err, res) => {
-                    if (err) console.log(err);
                 });
             });
     }
@@ -71,11 +68,11 @@ exports.ArticlesManager = class {
         const chatId = query.message.chat.id;
         const messageId = query.message.message_id;
         const userId = query.from.id;
-        const userData = await WiseUser.findOne({tgId: userId});
+        const userData = await getUserBy(WiseUser, {tgId: userId});
         const changedPageNumber = directPage !== -1 ? directPage : userData.inlinePageNumber + Number(data);
         const articlesData = this._formArticlesPage(changedPageNumber);
 
-        await WiseUser.updateOne({tgId: userId}, {inlinePageNumber: changedPageNumber});
+        await updateUserBy(WiseUser, {tgId: userId}, {inlinePageNumber: changedPageNumber});
 
         try {
             await this._bot.editMessageText(articlesData.text, {

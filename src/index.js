@@ -1,5 +1,5 @@
 const {bot} = require('./apiManagers/botSetup');
-const {WiseMediaUserModel, setZeroPageOrAddUser, cleanDatabase} = require('./apiManagers/mongoManager');
+const {WiseMediaUserModel, addUserIfNotInDb, cleanDatabase, getUserBy, updateUserBy} = require('./apiManagers/mongoManager');
 const WiseUser = WiseMediaUserModel;
 const {Button, BotAnswer, RegEx} = require('./consts/strings');
 const {State} = require('./consts/consts');
@@ -13,7 +13,8 @@ let state = State.regular;
 
 //Main screen handlers:
 bot.onText(RegEx.start, async (msg) => {
-    state = State.regular;
+    await addUserIfNotInDb(WiseUser, msg);
+    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular});
 
     await bot.sendMessage(getChatId(msg), BotAnswer.whatDoYouWant, {
         reply_markup: {
@@ -23,7 +24,8 @@ bot.onText(RegEx.start, async (msg) => {
 });
 
 bot.onText(RegEx.toMain, (async (msg) => {
-    state = State.regular;
+    await addUserIfNotInDb(WiseUser, msg);
+    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular});
 
     await bot.sendMessage(getChatId(msg), BotAnswer.whatDoYouWant, {
         reply_markup: {
@@ -34,7 +36,7 @@ bot.onText(RegEx.toMain, (async (msg) => {
 
 //Materials handlers:
 bot.onText(RegEx.materials, async (msg) => {
-    await setZeroPageOrAddUser(WiseUser, msg);
+    await addUserIfNotInDb(WiseUser, msg);
     await articles.fetchArticles().then(() => {
         articles.sendArticlesList(msg);
     });
@@ -57,7 +59,8 @@ bot.on('callback_query', async (query) => {
 
 //News request handlers:
 bot.onText(RegEx.newsSearch, async (msg) => {
-    state = State.newsSearcher;
+    await addUserIfNotInDb(WiseUser, msg);
+    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.newsSearcher});
 
     await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest, {
         reply_markup: {
@@ -67,38 +70,46 @@ bot.onText(RegEx.newsSearch, async (msg) => {
 });
 
 bot.onText(RegEx.anotherRequest, async (msg) => {
-    state = State.newsSearcher;
+    await addUserIfNotInDb(WiseUser, msg);
+    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.newsSearcher});
 
-    await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest);
+    await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest, {
+        reply_markup: {
+            keyboard: Keyboard.toMain
+        }
+    });
 });
 
 bot.on('message', async (msg) => {
     const chatId = getChatId(msg);
-    const isReadyToSendNews = state === State.newsSearcher && msg.text && msg.text !== Button.toMain;
+    let isReadyToSendNews
+    await getUserBy(WiseUser, {tgId: msg.from.id}).then((user) => {
+        isReadyToSendNews = user.botState === State.newsSearcher && msg.text && msg.text !== Button.toMain;
 
-    if (isReadyToSendNews) {
-        state = State.regular;
+        if (isReadyToSendNews) {
+            updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular});
 
-        await news.fetchNewsFromWeb(msg.text);
+            news.fetchNewsFromWeb(msg.text).then(() => {
+                if (news.newsList.length) {
+                    news.sendNews(chatId);
 
-        if (news.newsList.length) {
-            await news.sendNews(chatId);
-
-            await bot.sendMessage(chatId, BotAnswer.anythingElse, {
-                reply_markup: {
-                    keyboard: Keyboard.anotherRequest
+                    bot.sendMessage(chatId, BotAnswer.anythingElse, {
+                        reply_markup: {
+                            keyboard: Keyboard.anotherRequest
+                        }
+                    });
+                } else {
+                    bot.sendMessage(chatId, BotAnswer.noNews, {
+                        reply_markup: {
+                            keyboard: Keyboard.anotherRequest
+                        }
+                    });
                 }
             });
-        } else {
-            await bot.sendMessage(chatId, BotAnswer.noNews, {
-                reply_markup: {
-                    keyboard: Keyboard.anotherRequest
-                }
-            });
+        } else if (!msg.text) {
+            bot.sendMessage(chatId, BotAnswer.isItSticker);
         }
-    } else if (!msg.text) {
-        await bot.sendMessage(chatId, BotAnswer.isItSticker);
-    }
+    });
 });
 
 //Admin handlers:

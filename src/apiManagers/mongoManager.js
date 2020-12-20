@@ -10,35 +10,37 @@ const WiseMediaUserSchema = new Schema({
     inlinePageNumber: Number,
     lastListMessageId: Number,
     lastMaterialsRequestId: Number,
-    dateAdded: Date
+    dateAdded: Date,
+    botState: Number
 });
 
 connectToDb(dbConnectionUri);
 
-//Export functions:
+//Export:
 exports.WiseMediaUserModel = mongoose.model('WiseMediaUser', WiseMediaUserSchema);
 
-exports.setZeroPageOrAddUser = async function (WiseUser, message) {
-    const userId = message.from.id;
+exports.addUserIfNotInDb = function (WiseUser, msg) {
+    const userId = msg.from.id;
 
-    await WiseUser.findOne({tgId: userId}).exec((err, res) => {
+    WiseUser.findOne({tgId: userId}).exec((err, res) => {
         if (err) console.log(err)
 
         if (!res) {
             WiseUser.create({
-                tgChatId: message.chat.id,
+                tgChatId: msg.chat.id,
                 tgId: userId,
-                tgName: message.from.username,
+                tgName: msg.from.username,
                 inlinePageNumber: 0,
                 lastListMessageId: null,
                 lastMaterialsRequestId: null,
-                dateAdded: Date.now()
+                dateAdded: Date.now(),
+                botState: 0
             }, (err) => {
                 if (err) console.log(err);
             });
         }
     });
-}
+};
 
 exports.cleanDatabase = async function (WiseUser, bot, msg) {
     const sessionDurationMinutes = 45;
@@ -69,9 +71,19 @@ exports.cleanDatabase = async function (WiseUser, bot, msg) {
             bot.sendMessage(getChatId(msg), BotAnswer.noUsers);
         }
     });
-}
+};
 
-//Local functions:
+exports.getUserBy = async function (WiseUser, filter) {
+    return await WiseUser.findOne(filter);
+};
+
+exports.updateUserBy = async function (WiseUser, filter, update) {
+    WiseUser.updateOne(filter, update, {}, (err) => {
+        if (err) console.log(err);
+    });
+};
+
+//Local:
 async function deleteMaterialsMessages(user, bot) {
     const chatId = user.tgChatId;
     const lastMaterialsRequestId = user.lastMaterialsRequestId;

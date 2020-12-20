@@ -1,8 +1,9 @@
 require('dotenv').config();
 
 const TelegramBot = require('node-telegram-bot-api');
-const options = {webHook: {port: process.env.PORT}};
+// const options = {webHook: {port: process.env.PORT}};
+const options = {polling: true};
 const url = process.env.APP_URL;
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, options);
-bot.setWebHook(`${url}/bot${process.env.TELEGRAM_BOT_TOKEN}`);
+// bot.setWebHook(`${url}/bot${process.env.TELEGRAM_BOT_TOKEN}`);
 exports.bot = bot;

@@ -10,7 +10,7 @@ const requestString = {
 
     //Admin buttons strings:
     adminMenu: 'Меню адміна 🐌',
-    clearUsers: 'Оновити базу даних ♻',
+    clearUsers: 'Почистити базу даних ♻',
 };
 
 exports.BotAnswer = {
