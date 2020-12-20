@@ -34,8 +34,6 @@ exports.NewsManager = class {
                 await this.bot.sendMessage(chatId, html, {parse_mode: 'HTML'});
             } catch (e) {
                 await this.bot.sendMessage(chatId, BotAnswer.invalidDataNews);
-
-                console.error(e);
             }
         }
     }
