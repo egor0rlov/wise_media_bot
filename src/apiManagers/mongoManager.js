@@ -2,6 +2,7 @@ const dbConnectionUri = process.env.MONGO_URI;
 const mongoose = require('mongoose');
 const {Time, getChatId} = require("../utils");
 const {BotAnswer} = require('../consts/strings');
+const {State} = require('../consts/consts');
 const Schema = mongoose.Schema;
 const WiseMediaUserSchema = new Schema({
     tgChatId: Number,
@@ -11,7 +12,8 @@ const WiseMediaUserSchema = new Schema({
     lastListMessageId: Number,
     lastMaterialsRequestId: Number,
     dateAdded: Date,
-    botState: Number
+    botState: Number,
+    isAdmin: Boolean
 });
 
 connectToDb(dbConnectionUri);
@@ -19,10 +21,10 @@ connectToDb(dbConnectionUri);
 //Export:
 exports.WiseMediaUserModel = mongoose.model('WiseMediaUser', WiseMediaUserSchema);
 
-exports.addUserIfNotInDb = function (WiseUser, msg) {
+exports.addUserIfNotInDb = async function (WiseUser, msg, botState = State.regular) {
     const userId = msg.from.id;
 
-    WiseUser.findOne({tgId: userId}).exec((err, res) => {
+    await WiseUser.findOne({tgId: userId}).exec((err, res) => {
         if (err) console.log(err)
 
         if (!res) {
@@ -34,7 +36,8 @@ exports.addUserIfNotInDb = function (WiseUser, msg) {
                 lastListMessageId: null,
                 lastMaterialsRequestId: null,
                 dateAdded: Date.now(),
-                botState: 0
+                botState: botState,
+                isAdmin: userId === Number(process.env.ADMIN_TG_ID)
             }, (err) => {
                 if (err) console.log(err);
             });
@@ -55,7 +58,8 @@ exports.cleanDatabase = async function (WiseUser, bot, msg) {
                 const differenceWithNow = Date.now() - new Date(user.dateAdded);
                 const differenceInHours = Time.fromMilliseconds.toMinutes(differenceWithNow);
 
-                if (differenceInHours >= sessionDurationMinutes) {
+                if (differenceInHours >= sessionDurationMinutes &&
+                    user.botState !== State.newsSearcher && !user.isAdmin) {
                     deleteMaterialsMessages(user, bot);
                     userIdsToDelete.push(user._id);
                 }

@@ -62,4 +62,4 @@ exports.SimpleString = {
     shuffle: '🔀',
     divisor: '➖',
     views: '🔍 Переглядів',
-}
+};

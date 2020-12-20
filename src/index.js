@@ -3,7 +3,7 @@ const {WiseMediaUserModel, addUserIfNotInDb, cleanDatabase, getUserBy, updateUse
 const WiseUser = WiseMediaUserModel;
 const {Button, BotAnswer, RegEx} = require('./consts/strings');
 const {State} = require('./consts/consts');
-const {getChatId, userIsAdmin} = require('./utils');
+const {getChatId, userIsAdmin, textIsNotCommand} = require('./utils');
 const Keyboard = require('./consts/keyboards').Keyboard;
 const {ArticlesManager} = require('./apiManagers/articlesManager');
 const {NewsManager} = require('./apiManagers/newsManager');
@@ -41,21 +41,6 @@ bot.onText(RegEx.materials, async (msg) => {
     });
 });
 
-bot.on('callback_query', async (query) => {
-    const data = query.data;
-
-    if (articles.articlesList && (data === articles.nextPage || data === articles.prevPage)) {
-        await articles.updateInlineMessage(query);
-    } else if (data === articles.firstPage) {
-        await articles.updateInlineMessage(query, 0);
-    } else if (data === articles.randomPage) {
-        const randomPage = Math.floor(Math.random() * Math.floor(articles.articlesList.length / 10));
-        await articles.updateInlineMessage(query, randomPage);
-    } else {
-        await articles.sendArticleLink(query);
-    }
-});
-
 //News request handlers:
 bot.onText(RegEx.newsSearch, async (msg) => {
     await addUserIfNotInDb(WiseUser, msg);
@@ -75,38 +60,6 @@ bot.onText(RegEx.anotherRequest, async (msg) => {
     await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest, {
         reply_markup: {
             keyboard: Keyboard.toMain
-        }
-    });
-});
-
-bot.on('message', async (msg) => {
-    const chatId = getChatId(msg);
-    let isReadyToSendNews
-    await getUserBy(WiseUser, {tgId: msg.from.id}).then((user) => {
-        isReadyToSendNews = user.botState === State.newsSearcher && msg.text && msg.text !== Button.toMain;
-
-        if (isReadyToSendNews) {
-            updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular});
-
-            news.fetchNewsFromWeb(msg.text).then(() => {
-                if (news.newsList.length) {
-                    news.sendNews(chatId);
-
-                    bot.sendMessage(chatId, BotAnswer.anythingElse, {
-                        reply_markup: {
-                            keyboard: Keyboard.anotherRequest
-                        }
-                    });
-                } else {
-                    bot.sendMessage(chatId, BotAnswer.noNews, {
-                        reply_markup: {
-                            keyboard: Keyboard.anotherRequest
-                        }
-                    });
-                }
-            });
-        } else if (!msg.text) {
-            bot.sendMessage(chatId, BotAnswer.isItSticker);
         }
     });
 });
@@ -132,6 +85,58 @@ bot.onText(RegEx.clearUsers, async (msg) => {
     }
 });
 
+//Rest handlers:
+bot.on('message', async (msg) => {
+    if (textIsNotCommand(msg.text)) {
+        await addUserIfNotInDb(WiseUser, msg).then(() => {
+
+            setTimeout(async () => {
+                const chatId = getChatId(msg);
+                getUserBy(WiseUser, {tgId: msg.from.id}).then((user) => {
+                    if (isReadyToSendNews(user.botState, msg)) {
+                        updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular}).then(() => {
+                            news.fetchNewsFromWeb(msg.text).then(async () => {
+                                if (news.newsList.length) {
+                                    await news.sendNews(chatId);
+
+                                    await bot.sendMessage(chatId, BotAnswer.anythingElse, {
+                                        reply_markup: {
+                                            keyboard: Keyboard.anotherRequest
+                                        }
+                                    });
+                                } else {
+                                    await bot.sendMessage(chatId, BotAnswer.noNews, {
+                                        reply_markup: {
+                                            keyboard: Keyboard.anotherRequest
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    } else {
+                        bot.deleteMessage(getChatId(msg), msg.message_id);
+                    }
+                });
+            }, 500);
+        });
+    }
+});
+
+bot.on('callback_query', async (query) => {
+    const data = query.data;
+
+    if (articles.articlesList && (data === articles.nextPage || data === articles.prevPage)) {
+        await articles.updateInlineMessage(query);
+    } else if (data === articles.firstPage) {
+        await articles.updateInlineMessage(query, 0);
+    } else if (data === articles.randomPage) {
+        const randomPage = Math.floor(Math.random() * Math.floor(articles.articlesList.length / 10));
+        await articles.updateInlineMessage(query, randomPage);
+    } else {
+        await articles.sendArticleLink(query);
+    }
+});
+
 //Functions:
 function getMainKeyboard(msg) {
     const keyboard = [...Keyboard.main]; //Spread to avoid changing initial buttons array
@@ -143,8 +148,6 @@ function getMainKeyboard(msg) {
     return keyboard;
 }
 
-function getAdminKeyboard(msg) {
-    if (userIsAdmin(msg)) {
-        return Keyboard.adminMenu;
-    }
+function isReadyToSendNews(botState, msg) {
+    return botState === State.newsSearcher && msg.text && msg.text !== Button.toMain;
 }
