@@ -130,7 +130,8 @@ bot.on('callback_query', async (query) => {
     } else if (data === articles.firstPage) {
         await articles.updateInlineMessage(query, 0);
     } else if (data === articles.randomPage) {
-        const randomPage = Math.floor(Math.random() * Math.floor(articles.articlesList.length / 10));
+        const articlesPerPage = 5;
+        const randomPage = Math.floor(Math.random() * Math.floor(articles.articlesList.length / articlesPerPage));
         await articles.updateInlineMessage(query, randomPage);
     } else {
         await articles.sendArticleLink(query);

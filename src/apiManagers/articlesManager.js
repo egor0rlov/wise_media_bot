@@ -93,7 +93,7 @@ exports.ArticlesManager = class {
 
     async sendArticleLink(query) {
         const chatId = query.message.chat.id;
-        const linkToSend = this._articlesHost + query.data;
+        const linkToSend = this._articlesHost + this.articlesList[Number(query.data)].path;
         const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`;
 
         await this._bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
@@ -114,18 +114,18 @@ exports.ArticlesManager = class {
         const endIndex = (this.articlesList.length - startIndex - step) < 0 ? this.articlesList.length : startIndex + step;
         const buttonsInRowAmount = 5;
         let indexOfCurrentRow = 0;
-        const copyOfArticles = [...this.articlesList];
+        const copyOfArticles = [...this.articlesList].slice(startIndex, endIndex + 1);
         const maxLineLength = copyOfArticles.sort((a, b) => b.name.length - a.name.length)[0].name.length;
 
         for (let i = startIndex; i < endIndex; i++) {
             const article = this.articlesList[i];
             const articleNumeration = ((i % step) + 1); //From 1 to step.
             const articleLine = `<b>${articleNumeration}: <a href="${article.url}">${article.name}</a></b>
-    ${SimpleString.views}: <b>${article.views}</b>\n`;
+    ${SimpleString.views}: <b>${article.views}</b>\n\n`;
             articlesText += i > startIndex ? `${drawMiddleDivisor(maxLineLength, SimpleString.divisor)}\n` : '';
             articlesText = articlesText.concat(articleLine);
 
-            buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: article.path});
+            buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: i});
 
             if (buttons[indexOfCurrentRow].length === buttonsInRowAmount) {
                 buttons.push([]);
