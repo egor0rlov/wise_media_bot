@@ -25,11 +25,19 @@ exports.userIsAdmin = function (msg) {
     return msg.from.id === Number(process.env.ADMIN_TG_ID);
 }
 
-exports.drawDivisorLine = function (stringLength, divisor) {
+exports.drawMiddleDivisor = function (stringLength, divisor, space = '  ') {
+    const start = 0;
+    const end = stringLength - 1;
+    const middle = stringLength % 2 === 0 ? [Math.floor(end / 2), Math.ceil(end / 2)] : [Math.floor(end / 2)];
+    const isOneOf = (value, ...values) => Boolean(values.filter((elem) => elem === value).length);
     let result = '';
 
     for (let i = 0; i < stringLength; i++) {
-        result += divisor;
+        if (isOneOf(i, ...middle)) {
+            result += divisor;
+        } else {
+            result += space;
+        }
     }
 
     return result;

@@ -4,7 +4,7 @@ const {WiseMediaUserModel} = require('./mongoManager');
 const WiseUser = WiseMediaUserModel;
 const {Button, SimpleString} = require('../consts/strings');
 const {articlesHost} = require('../consts/consts');
-const {fetchTelegraph, drawThreeDivisors, drawDivisorLine} = require('../utils');
+const {fetchTelegraph, drawMiddleDivisor} = require('../utils');
 
 exports.ArticlesManager = class {
     _bot;
@@ -97,7 +97,7 @@ exports.ArticlesManager = class {
     async sendArticleLink(query) {
         const chatId = query.message.chat.id;
         const linkToSend = this._articlesHost + query.data;
-        const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`
+        const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`;
 
         await this._bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
         await this._bot.answerCallbackQuery(query.id);
@@ -124,9 +124,8 @@ exports.ArticlesManager = class {
             const article = this.articlesList[i];
             const articleNumeration = ((i % step) + 1); //From 1 to step.
             const articleLine = `<b>${articleNumeration}: <a href="${article.url}">${article.name}</a></b>
-    ${SimpleString.views}: <b>${article.views}</b>\n\n`;
-
-            articlesText += i > startIndex ? `${drawDivisorLine(maxLineLength / 2.7, SimpleString.divisor)}\n` : '';
+    ${SimpleString.views}: <b>${article.views}</b>\n`;
+            articlesText += i > startIndex ? `${drawMiddleDivisor(maxLineLength, SimpleString.divisor)}\n` : '';
             articlesText = articlesText.concat(articleLine);
 
             buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: article.path});
