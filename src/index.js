@@ -9,7 +9,6 @@ const {ArticlesManager} = require('./apiManagers/articlesManager');
 const {NewsManager} = require('./apiManagers/newsManager');
 const articles = new ArticlesManager(bot);
 const news = new NewsManager(bot);
-let state = State.regular;
 
 //Main screen handlers:
 bot.onText(RegEx.start, async (msg) => {
