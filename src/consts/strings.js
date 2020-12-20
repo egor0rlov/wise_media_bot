@@ -22,7 +22,7 @@ exports.BotAnswer = {
     isItSticker: 'А словами?' + mascot,
     welcomeAdmin: 'Давно не бачились ' + mascot,
     youAreNotAdmin: 'Ти не адмін ' + mascot,
-    noUsersToDelete: 'Користувачів з перевищенім часом сесії немає ⚠',
+    noUsersToDelete: 'Користувачів з перевищеним часом сесії немає ⚠',
     noUsers: 'Жодного користувача в базі ⚠',
     usersDeleted: (amount) => {
         const ending = amount === 1 ? 'користувача ✅' : 'користувачів ✅';
@@ -61,4 +61,5 @@ exports.SimpleString = {
     beginning: '↩',
     shuffle: '🔀',
     divisor: '➖',
+    views: '🔍 Переглядів',
 }

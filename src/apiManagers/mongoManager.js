@@ -59,8 +59,6 @@ exports.cleanDatabase = async function (WiseUser, bot, msg) {
                 }
             });
 
-            console.log(userIdsToDelete)
-
             if (userIdsToDelete.length > 0) {
                 deleteUsersIfPresent(userIdsToDelete, WiseUser);
                 bot.sendMessage(getChatId(msg), BotAnswer.usersDeleted(userIdsToDelete.length));

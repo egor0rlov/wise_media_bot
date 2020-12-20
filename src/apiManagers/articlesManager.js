@@ -4,7 +4,7 @@ const {WiseMediaUserModel} = require('./mongoManager');
 const WiseUser = WiseMediaUserModel;
 const {Button, SimpleString} = require('../consts/strings');
 const {articlesHost} = require('../consts/consts');
-const {fetchTelegraph} = require('../utils');
+const {fetchTelegraph, drawThreeDivisors, drawDivisorLine} = require('../utils');
 
 exports.ArticlesManager = class {
     _bot;
@@ -30,7 +30,12 @@ exports.ArticlesManager = class {
         await fetchTelegraph().then((response) => {
             const articles = response.result.pages
                 .map((article) => {
-                    return {name: article.title, queue: article.path}
+                    return {
+                        name: article.title,
+                        path: article.path,
+                        views: article.views,
+                        url: article.url
+                    };
                 });
 
             this.articlesList = articles;
@@ -48,6 +53,7 @@ exports.ArticlesManager = class {
 
         await this._bot.sendMessage(chatId, data.text, {
             parse_mode: 'HTML',
+            disable_web_page_preview: true,
             reply_markup: {inline_keyboard: data.keyboard}
         })
             .then((res) => {
@@ -76,6 +82,7 @@ exports.ArticlesManager = class {
                 message_id: messageId,
                 chat_id: chatId,
                 parse_mode: 'HTML',
+                disable_web_page_preview: true,
                 reply_markup: {inline_keyboard: articlesData.keyboard}
             });
         } catch (e) {
@@ -103,23 +110,26 @@ exports.ArticlesManager = class {
     }
 
     _formArticlesPage(inlinePageNumber) {
-        let articlesText = `<b>${SimpleString.page + ' ' + SimpleString.pageWord + ' ' + (inlinePageNumber + 1)}</b>\n`;
+        let articlesText = `<b>${SimpleString.page + ' ' + SimpleString.pageWord + ' ' + (inlinePageNumber + 1)}</b>\n\n`;
         const buttons = [[]];
-        const step = 10;
+        const step = 5; //Affects articles amount on page
         const startIndex = inlinePageNumber * step;
         const endIndex = (this.articlesList.length - startIndex - step) < 0 ? this.articlesList.length : startIndex + step;
         const buttonsInRowAmount = 5;
         let indexOfCurrentRow = 0;
+        const copyOfArticles = [...this.articlesList];
+        const maxLineLength = copyOfArticles.sort((a, b) => b.name.length - a.name.length)[0].name.length;
 
         for (let i = startIndex; i < endIndex; i++) {
             const article = this.articlesList[i];
-            const articleNumeration = ((i % step) + 1); //From 1 to 10.
-            const articleLine = `<b>${articleNumeration}:</b> ${article.name}`;
+            const articleNumeration = ((i % step) + 1); //From 1 to step.
+            const articleLine = `<b>${articleNumeration}: <a href="${article.url}">${article.name}</a></b>
+    ${SimpleString.views}: <b>${article.views}</b>\n\n`;
 
-            articlesText += `\n${SimpleString.divisor}\n`;
+            articlesText += i > startIndex ? `${drawDivisorLine(maxLineLength / 2.7, SimpleString.divisor)}\n` : '';
             articlesText = articlesText.concat(articleLine);
 
-            buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: article.queue});
+            buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: article.path});
 
             if (buttons[indexOfCurrentRow].length === buttonsInRowAmount) {
                 buttons.push([]);
@@ -127,20 +137,20 @@ exports.ArticlesManager = class {
             }
         }
 
-        const arrowButtons = this._formNavigationButtons(inlinePageNumber);
+        const arrowButtons = this._formNavigationButtons(inlinePageNumber, step);
 
         buttons.push(arrowButtons);
 
         return {text: articlesText, keyboard: buttons};
     }
 
-    _formNavigationButtons(inlinePageNumber) {
+    _formNavigationButtons(inlinePageNumber, step) {
         const currentPage = inlinePageNumber + 1;
         const arrowButtons = [
             {text: SimpleString.beginning, callback_data: this.firstPage},
             {text: SimpleString.shuffle, callback_data: this.randomPage},
         ];
-        const lastArticlesPage = Math.ceil(this.articlesList.length / 10);
+        const lastArticlesPage = Math.ceil(this.articlesList.length / step);
 
         if (currentPage !== 1) {
             arrowButtons.unshift({text: Button.arrowPrevious, callback_data: this.prevPage});
