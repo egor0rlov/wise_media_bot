@@ -117,7 +117,7 @@ bot.on('message', async (msg) => {
                         bot.deleteMessage(getChatId(msg), msg.message_id);
                     }
                 });
-            }, 500);
+            }, 700);
         });
     }
 });
