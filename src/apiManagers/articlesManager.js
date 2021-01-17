@@ -1,9 +1,9 @@
 require('dotenv').config();
 
-const {WiseMediaUserModel, getUserBy, updateUserBy} = require('./mongoManager');
+const { WiseMediaUserModel, getUserBy, updateUserBy } = require('./mongoManager');
 const WiseUser = WiseMediaUserModel;
-const {Button, SimpleString} = require('../consts/strings');
-const {fetchTelegraph, drawMiddleDivisor} = require('../utils');
+const { Button, SimpleString } = require('../consts/strings');
+const { fetchTelegraph, drawMiddleDivisor } = require('../utils');
 
 exports.ArticlesManager = class {
     _bot;
@@ -44,19 +44,18 @@ exports.ArticlesManager = class {
     async sendArticlesList(msg) {
         const userId = msg.from.id;
         const chatId = msg.chat.id;
-        const userData = await getUserBy(WiseUser, {tgId: userId});
+        const userData = await getUserBy(WiseUser, { tgId: userId });
         const data = this._formArticlesPage(userData.inlinePageNumber);
 
-        await this._deleteMessageIfPresent(chatId, userData.lastMaterialsRequestId)
-        await this._deleteMessageIfPresent(chatId, userData.lastListMessageId);
+        await this._setMaterialsMessageTextToSnail(chatId, userData.lastListMessageId);
 
         await this._bot.sendMessage(chatId, data.text, {
             parse_mode: 'HTML',
             disable_web_page_preview: true,
-            reply_markup: {inline_keyboard: data.keyboard}
+            reply_markup: { inline_keyboard: data.keyboard }
         })
             .then((res) => {
-                updateUserBy(WiseUser, {tgId: userId}, {
+                updateUserBy(WiseUser, { tgId: userId }, {
                     lastListMessageId: res.message_id,
                     lastMaterialsRequestId: msg.message_id
                 });
@@ -68,11 +67,11 @@ exports.ArticlesManager = class {
         const chatId = query.message.chat.id;
         const messageId = query.message.message_id;
         const userId = query.from.id;
-        const userData = await getUserBy(WiseUser, {tgId: userId});
+        const userData = await getUserBy(WiseUser, { tgId: userId });
         const changedPageNumber = directPage !== -1 ? directPage : userData.inlinePageNumber + Number(data);
         const articlesData = this._formArticlesPage(changedPageNumber);
 
-        await updateUserBy(WiseUser, {tgId: userId}, {inlinePageNumber: changedPageNumber});
+        await updateUserBy(WiseUser, { tgId: userId }, { inlinePageNumber: changedPageNumber });
 
         try {
             await this._bot.editMessageText(articlesData.text, {
@@ -80,7 +79,7 @@ exports.ArticlesManager = class {
                 chat_id: chatId,
                 parse_mode: 'HTML',
                 disable_web_page_preview: true,
-                reply_markup: {inline_keyboard: articlesData.keyboard}
+                reply_markup: { inline_keyboard: articlesData.keyboard }
             });
         } catch (e) {
             if (!e.message.includes('exactly the same')) {
@@ -96,13 +95,14 @@ exports.ArticlesManager = class {
         const linkToSend = this._articlesHost + this.articlesList[Number(query.data)].path;
         const messageText = `<b><a href="${linkToSend}">${SimpleString.article}: </a></b>`;
 
-        await this._bot.sendMessage(chatId, messageText, {parse_mode: 'HTML'});
+        await this._bot.sendMessage(chatId, messageText, { parse_mode: 'HTML' });
         await this._bot.answerCallbackQuery(query.id);
     }
 
-    async _deleteMessageIfPresent(chatId, messageId) {
+    async _setMaterialsMessageTextToSnail(chatId, messageId) {
         if (messageId) {
-            await this._bot.deleteMessage(chatId, messageId);
+            // await this._bot.deleteMessage(chatId, messageId);
+            await this._bot.editMessageText('🐌', { message_id: messageId, chat_id: chatId });
         }
     }
 
@@ -125,7 +125,7 @@ exports.ArticlesManager = class {
             articlesText += i > startIndex ? `${drawMiddleDivisor(maxLineLength, SimpleString.divisor)}\n` : '';
             articlesText = articlesText.concat(articleLine);
 
-            buttons[indexOfCurrentRow].push({text: articleNumeration, callback_data: i});
+            buttons[indexOfCurrentRow].push({ text: articleNumeration, callback_data: i });
 
             if (buttons[indexOfCurrentRow].length === buttonsInRowAmount) {
                 buttons.push([]);
@@ -137,23 +137,23 @@ exports.ArticlesManager = class {
 
         buttons.push(arrowButtons);
 
-        return {text: articlesText, keyboard: buttons};
+        return { text: articlesText, keyboard: buttons };
     }
 
     _formNavigationButtons(inlinePageNumber, step) {
         const currentPage = inlinePageNumber + 1;
         const arrowButtons = [
-            {text: SimpleString.beginning, callback_data: this.firstPage},
-            {text: SimpleString.shuffle, callback_data: this.randomPage},
+            { text: SimpleString.beginning, callback_data: this.firstPage },
+            { text: SimpleString.shuffle, callback_data: this.randomPage },
         ];
         const lastArticlesPage = Math.ceil(this.articlesList.length / step);
 
         if (currentPage !== 1) {
-            arrowButtons.unshift({text: Button.arrowPrevious, callback_data: this.prevPage});
+            arrowButtons.unshift({ text: Button.arrowPrevious, callback_data: this.prevPage });
         }
 
         if (currentPage !== lastArticlesPage) {
-            arrowButtons.push({text: Button.arrowNext, callback_data: this.nextPage});
+            arrowButtons.push({ text: Button.arrowNext, callback_data: this.nextPage });
         }
 
         return arrowButtons;

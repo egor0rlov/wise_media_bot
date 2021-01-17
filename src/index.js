@@ -1,19 +1,19 @@
-const {bot} = require('./apiManagers/botSetup');
-const {WiseMediaUserModel, addUserIfNotInDb, cleanDatabase, getUserBy, updateUserBy} = require('./apiManagers/mongoManager');
+const { bot } = require('./apiManagers/botSetup');
+const { WiseMediaUserModel, addUserIfNotInDb, cleanDatabase, getUserBy, updateUserBy } = require('./apiManagers/mongoManager');
 const WiseUser = WiseMediaUserModel;
-const {Button, BotAnswer, RegEx} = require('./consts/strings');
-const {State} = require('./consts/consts');
-const {getChatId, userIsAdmin, textIsNotCommand} = require('./utils');
+const { Button, BotAnswer, RegEx } = require('./consts/strings');
+const { State } = require('./consts/consts');
+const { getChatId, userIsAdmin, textIsNotCommand } = require('./utils');
 const Keyboard = require('./consts/keyboards').Keyboard;
-const {ArticlesManager} = require('./apiManagers/articlesManager');
-const {NewsManager} = require('./apiManagers/newsManager');
+const { ArticlesManager } = require('./apiManagers/articlesManager');
+const { NewsManager } = require('./apiManagers/newsManager');
 const articles = new ArticlesManager(bot);
 const news = new NewsManager(bot);
 
 //Main screen handlers:
 bot.onText(RegEx.start, async (msg) => {
     await addUserIfNotInDb(WiseUser, msg);
-    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular});
+    await updateUserBy(WiseUser, { tgId: msg.from.id }, { botState: State.regular });
 
     await bot.sendMessage(getChatId(msg), BotAnswer.whatDoYouWant, {
         reply_markup: {
@@ -24,7 +24,7 @@ bot.onText(RegEx.start, async (msg) => {
 
 bot.onText(RegEx.toMain, (async (msg) => {
     await addUserIfNotInDb(WiseUser, msg);
-    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular});
+    await updateUserBy(WiseUser, { tgId: msg.from.id }, { botState: State.regular });
 
     await bot.sendMessage(getChatId(msg), BotAnswer.whatDoYouWant, {
         reply_markup: {
@@ -44,7 +44,7 @@ bot.onText(RegEx.materials, async (msg) => {
 //News request handlers:
 bot.onText(RegEx.newsSearch, async (msg) => {
     await addUserIfNotInDb(WiseUser, msg);
-    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.newsSearcher});
+    await updateUserBy(WiseUser, { tgId: msg.from.id }, { botState: State.newsSearcher });
 
     await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest, {
         reply_markup: {
@@ -55,7 +55,7 @@ bot.onText(RegEx.newsSearch, async (msg) => {
 
 bot.onText(RegEx.anotherRequest, async (msg) => {
     await addUserIfNotInDb(WiseUser, msg);
-    await updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.newsSearcher});
+    await updateUserBy(WiseUser, { tgId: msg.from.id }, { botState: State.newsSearcher });
 
     await bot.sendMessage(getChatId(msg), BotAnswer.enterRequest, {
         reply_markup: {
@@ -92,9 +92,9 @@ bot.on('message', async (msg) => {
 
             setTimeout(async () => {
                 const chatId = getChatId(msg);
-                getUserBy(WiseUser, {tgId: msg.from.id}).then((user) => {
+                getUserBy(WiseUser, { tgId: msg.from.id }).then((user) => {
                     if (isReadyToSendNews(user.botState, msg)) {
-                        updateUserBy(WiseUser, {tgId: msg.from.id}, {botState: State.regular}).then(() => {
+                        updateUserBy(WiseUser, { tgId: msg.from.id }, { botState: State.regular }).then(() => {
                             news.fetchNewsFromWeb(msg.text).then(async () => {
                                 if (news.newsList.length) {
                                     await news.sendNews(chatId);

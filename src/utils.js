@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const {Button, BotAnswer} = require('./consts/strings');
+const { Button, BotAnswer } = require('./consts/strings');
 
 const toSeconds = (m) => Math.floor(m / 1000);
 const toMinutes = (m) => Math.floor(toSeconds(m) / 60);
