@@ -3,7 +3,7 @@ require('dotenv').config();
 const { WiseMediaUserModel, getUserBy, updateUserBy } = require('./mongoManager');
 const WiseUser = WiseMediaUserModel;
 const { Button, SimpleString } = require('../consts/strings');
-const { fetchTelegraph, drawMiddleDivisor } = require('../utils');
+const { fetchTelegraph, drawMiddleDivisor, Time } = require('../utils');
 
 exports.ArticlesManager = class {
     _bot;
@@ -47,7 +47,11 @@ exports.ArticlesManager = class {
         const userData = await getUserBy(WiseUser, { tgId: userId });
         const data = this._formArticlesPage(userData.inlinePageNumber);
 
-        await this._setMaterialsMessageTextToSnail(chatId, userData.lastListMessageId);
+        //* If last materials messages are older than 20 minutes they will be deleted and set to NULL in MongoDB
+        if (userData.lastMaterialsRequestId && userData.lastListMessageId) {
+            await this._deleteMessage(chatId, userData.lastMaterialsRequestId);
+            await this._deleteMessage(chatId, userData.lastListMessageId);
+        }
 
         await this._bot.sendMessage(chatId, data.text, {
             parse_mode: 'HTML',
@@ -59,6 +63,8 @@ exports.ArticlesManager = class {
                     lastListMessageId: res.message_id,
                     lastMaterialsRequestId: msg.message_id
                 });
+
+                this._deleteMessageAfterTwentyMinutes(res.message_id, msg.message_id, userId, chatId);
             });
     }
 
@@ -99,11 +105,23 @@ exports.ArticlesManager = class {
         await this._bot.answerCallbackQuery(query.id);
     }
 
-    async _setMaterialsMessageTextToSnail(chatId, messageId) {
+    async _deleteMessage(chatId, messageId) {
         if (messageId) {
-            // await this._bot.deleteMessage(chatId, messageId);
-            await this._bot.editMessageText('🐌', { message_id: messageId, chat_id: chatId });
+            await this._bot.deleteMessage(chatId, messageId);
         }
+    }
+
+    async _deleteMessageAfterTwentyMinutes(lastMaterials, lastRequest, userId, chatId) {
+        const twentyMinutes = 1200000;
+
+        setTimeout(async () => {
+            await this._bot.deleteMessage(chatId, lastMaterials);
+            await this._bot.deleteMessage(chatId, lastRequest);
+            await updateUserBy(WiseUser, { tgId: userId }, {
+                lastListMessageId: null,
+                lastMaterialsRequestId: null
+            });
+        }, twentyMinutes);
     }
 
     _formArticlesPage(inlinePageNumber) {
