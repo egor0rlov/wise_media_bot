@@ -64,7 +64,7 @@ exports.ArticlesManager = class {
                     lastMaterialsRequestId: msg.message_id
                 });
 
-                this._deleteMessageAfterOneHour(res.message_id, msg.message_id, userId, chatId);
+                this._deleteMessageAfterFifteenMinutes(res.message_id, msg.message_id, userId, chatId);
             });
     }
 
@@ -111,8 +111,8 @@ exports.ArticlesManager = class {
         }
     }
 
-    async _deleteMessageAfterOneHour(lastMaterials, lastRequest, userId, chatId) {
-        const oneHour = 3600000;
+    async _deleteMessageAfterFifteenMinutes(lastMaterials, lastRequest, userId, chatId) {
+        const fifteenMinutes = 900000;
 
         setTimeout(async () => {
             await this._bot.deleteMessage(chatId, lastMaterials);
@@ -121,7 +121,7 @@ exports.ArticlesManager = class {
                 lastListMessageId: null,
                 lastMaterialsRequestId: null
             });
-        }, oneHour);
+        }, fifteenMinutes);
     }
 
     _formArticlesPage(inlinePageNumber) {
