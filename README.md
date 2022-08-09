@@ -1,4 +1,6 @@
 # WiseMediaBot
+## Not available anymore
+
 Telegram bot which provides access to articles about media literacy and news monitoring.
 
 __Link:__ https://t.me/wise_media_bot  
